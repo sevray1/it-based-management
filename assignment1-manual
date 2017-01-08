@@ -1,0 +1,84 @@
+
+Development environment setup:
+======================================================
+Ubuntu 16.04
+
+# check version
+apt-cache policy rabbitmq-server
+
+# install rabbitmq-server (3.5.7)
+sudo apt-get install rabbitmq-server
+
+As an administrator, start and stop the server as usual for Debian using 
+invoke-rc.d rabbitmq-server stop/start/status/etc.
+
+# create a virtual environment (if you don't want to mess up your standard installation)
+# install pika, the rabbitmq python library, requests for the ui-simulator
+pip install pika
+pip install requests
+
+Components:
+=====================================================
+* cppi-dataservice (java client)
+* cppi-financial-system
+** InvestmentSystem (java client)
+** StockPriceSystem (python client)
+** ui-simulator (python client - simulates user input - cppifrontend)
+* cppi-strategy (java client)
+* middle-ware: RabbitMQ
+
+java clients: using spring boot framework, as the assignment description suggested.
+middleware: uses RabbitMQ, as the assignment description suggested
+python clients are used for simulating the stockprices and the user interface. pika & request libraries are needed.
+(you can rewrite as java client (or any other) as well, as long as it still works....)
+
+Starting the components
+=====================================================
+0) rabbitmq server (standard configuration worked for me!)
+1) cppi-dataservice: java -jar target/cppi-dataservice-0.0.1-SNAPSHOT.jar
+2) cppi-financial-system: java -jar target/cppi-financial-system-0.0.1-SNAPSHOT.jar --server.port=8090
+3) cppi-strategy: java -jar target/cppi-strategy-0.0.1-SNAPSHOT.jar --server.port=8091
+
+Simulating the portfolio optimization:
+=====================================================
+1) simulate user input: ui-simulator.py (needs to be done first, otherwise no data within the system!)
+2) simulate stockprices: StockPriceSystem.py
+3) IMPORTANT: Always restart the cppi-dataservice for rerunning the calculation!
+
+Front-End: Needs to be implemented!
+========================================================
+The cppi-dataservice provides following services for the realization:
+
+	@RequestMapping(value = "/cppi/{account}/current", method = RequestMethod.GET)
+	public CPPIValuesDTO getCurrent(@PathVariable String account) 
+	
+	@RequestMapping(value = "/cppi/{account}/history", method = RequestMethod.GET)
+	public List<CPPIValuesDTO> getHistory(@PathVariable String account)
+
+	@RequestMapping(value = "/cppi/conf", method = RequestMethod.POST)
+	public void UserDataService(@RequestBody CPPIPortfolioConfigurationDTO configuration) {
+
+For testing them (and UI implementation!) simple call:
+
+1) Persist the initial portfolio configuration
+* (POST) http://localhost:8080/rest/data/cppi/conf  (for details look at ui-simulator.py)
+
+2) Start the StockPriceSystem
+python StockPriceSystem.py --interval 10 
+(3 is default if interval is not provided)
+
+then you can retrieve values.
+* (GET) http://localhost:8080/rest/data/cppi/itbm-devs/current 
+* (GET) http://localhost:8080/rest/data/cppi/itbm-devs/history
+in these cases, itbm-devs was used as account name within the portfolio configuration
+
+
+
+
+
+
+
+
+
+
+
